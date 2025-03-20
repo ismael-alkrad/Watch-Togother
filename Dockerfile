@@ -1,14 +1,14 @@
-# استخدام Ubuntu كصورة أساسية
-FROM ubuntu:20.04
+# ✅ استخدم صورة Node.js الرسمية التي تحتوي على npm مثبت مسبقًا
+FROM node:18
 
-# إعداد المنطقة الزمنية تلقائيًا لتجنب تعليق التثبيت
+# إعداد المنطقة الزمنية لتجنب التوقف أثناء التثبيت
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     tzdata \
     && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime \
     && dpkg-reconfigure -f noninteractive tzdata
 
-# ✅ تثبيت المكتبات المطلوبة لـ Puppeteer
+# ✅ تثبيت المكتبات المطلوبة لـ Puppeteer و FFmpeg
 RUN apt-get install -y \
     ca-certificates \
     fonts-liberation \
@@ -46,13 +46,13 @@ COPY package*.json ./
 # تجاوز فحص Python عند تثبيت youtube-dl-exec
 ENV YOUTUBE_DL_SKIP_PYTHON_CHECK=1
 
-# تثبيت الحزم
+# ✅ تثبيت الحزم باستخدام npm (سيعمل الآن لأنه تم تثبيت Node.js بشكل صحيح)
 RUN npm install
 
 # نسخ بقية الملفات
 COPY . .
 
-# تعيين Puppeteer لاستخدام Chromium بدلاً من تنزيل نسخة جديدة
+# ✅ Puppeteer سيستخدم Chromium المثبت مسبقًا
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
