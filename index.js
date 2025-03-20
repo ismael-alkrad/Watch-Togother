@@ -66,16 +66,7 @@ async function startStreaming(guildId, videoUrl) {
 
     const videoSrc = await page.evaluate(() => {
         const videoElement = document.querySelector("video");
-        if (!videoElement) return null;
-        // إذا كان رابط الفيديو يبدأ بـ blob، فابحث عن وسم <source>
-        let src = videoElement.src;
-        if (src.startsWith("blob:")) {
-            const sourceElement = videoElement.querySelector("source");
-            if (sourceElement && sourceElement.src) {
-                src = sourceElement.src;
-            }
-        }
-        return src;
+        return videoElement ? videoElement.src : null;
     });
 
     if (!videoSrc) {
