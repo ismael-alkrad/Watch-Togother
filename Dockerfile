@@ -36,4 +36,4 @@ RUN npm install
 COPY . .
 
 # تشغيل البوت
-CMD ["node", "bot.js"]
+CMD ["node", "index.js"]
