@@ -66,8 +66,11 @@ async function startStreaming(guildId, videoUrl) {
 
     const videoSrc = await page.evaluate(() => {
         const videoElement = document.querySelector("video");
-        return videoElement ? videoElement.src : null;
-    });
+        if (!videoElement) return null;
+    
+        const sourceTag = videoElement.querySelector("source[type='application/x-mpegurl']");
+        return sourceTag ? sourceTag.src : null;
+    });    
 
     if (!videoSrc) {
         console.error("❌ No video found on the page.");
