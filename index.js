@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, VoiceConnectionStatus } = require("@discordjs/voice");
 const puppeteer = require("puppeteer");
 const { spawn } = require("child_process");
-const ytdl = require("ytdl-core"); // مكتبة تحميل فيديوهات YouTube
+const ytdl = require("ytdl-core-discord"); // Use `ytdl-core-discord` to fix YouTube issues
 const express = require("express");
 
 const app = express();
@@ -32,8 +32,13 @@ client.on("messageCreate", async (message) => {
 
         const videoUrl = args[1];
 
-        message.channel.send(`🎬 Starting WebRTC stream for: ${videoUrl}`);
+        if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
+            message.channel.send(`🎬 Playing YouTube video: ${videoUrl}`);
+            await playYouTubeAudio(message.guild.id, videoUrl);
+            return;
+        }
 
+        message.channel.send(`🎬 Starting WebRTC stream for: ${videoUrl}`);
         try {
             await startStreaming(message.guild.id, videoUrl);
         } catch (error) {
@@ -48,21 +53,49 @@ client.on("messageCreate", async (message) => {
     }
 });
 
-// Start WebRTC Streaming
+// ✅ **YouTube Audio Streaming**
+async function playYouTubeAudio(guildId, videoUrl) {
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+        console.error("❌ Guild not found.");
+        return;
+    }
+
+    const channel = guild.channels.cache.get(process.env.DISCORD_VOICE_CHANNEL_ID);
+    if (!channel || channel.type !== 2) {
+        console.error("❌ Voice channel not found.");
+        return;
+    }
+
+    const connection = joinVoiceChannel({
+        channelId: channel.id,
+        guildId: guild.id,
+        adapterCreator: guild.voiceAdapterCreator,
+    });
+
+    connection.on(VoiceConnectionStatus.Ready, async () => {
+        console.log("🎥 Connected to voice channel, starting YouTube stream...");
+
+        try {
+            const stream = await ytdl(videoUrl, { filter: "audioonly", highWaterMark: 1 << 25 });
+            const player = createAudioPlayer();
+            const resource = createAudioResource(stream);
+
+            player.play(resource);
+            connection.subscribe(player);
+        } catch (error) {
+            console.error("❌ Error streaming YouTube video:", error);
+        }
+    });
+}
+
+// ✅ **Start WebRTC Streaming for Other Websites**
 async function startStreaming(guildId, videoUrl) {
     if (browser) {
         console.log("❌ A stream is already running.");
         return;
     }
 
-    // 🔹 التعامل مع YouTube عبر ytdl-core
-    if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
-        const ytStream = ytdl(videoUrl, { filter: "audioonly", quality: "highestaudio" });
-        await playVideoInDiscord(guildId, ytStream);
-        return;
-    }
-
-    // 🔹 التعامل مع المواقع الأخرى عبر Puppeteer
     browser = await puppeteer.launch({
         headless: "new",
         args: ["--no-sandbox", "--disable-setuid-sandbox"]
@@ -93,14 +126,12 @@ async function startStreaming(guildId, videoUrl) {
                 return;
             }
 
-            // التحقق من وجود `source` مباشر
             const sourceTag = videoElement.querySelector("source[type='application/x-mpegurl']");
             if (sourceTag) {
                 resolve(sourceTag.src);
                 return;
             }
 
-            // التحقق مما إذا كان `src` عبارة عن blob:
             if (videoElement.src.startsWith("blob:")) {
                 const observer = new MutationObserver(() => {
                     if (videoElement.src && !videoElement.src.startsWith("blob:")) {
@@ -133,7 +164,7 @@ async function startStreaming(guildId, videoUrl) {
     await playVideoInDiscord(guildId, videoSrc || interceptedVideoUrl);
 }
 
-// Play Video in Discord using WebRTC
+// ✅ **Play WebRTC Stream in Discord**
 async function playVideoInDiscord(guildId, videoStream) {
     const guild = client.guilds.cache.get(guildId);
     if (!guild) {
@@ -159,7 +190,7 @@ async function playVideoInDiscord(guildId, videoStream) {
     });
 }
 
-// GStreamer Pipeline to Convert Video to WebRTC
+// ✅ **GStreamer for Audio Playback**
 function startGStreamer(videoStream, connection) {
     console.log("🚀 Starting GStreamer...");
 
@@ -193,7 +224,7 @@ function startGStreamer(videoStream, connection) {
     connection.subscribe(player);
 }
 
-// Stop Streaming
+// ✅ **Stop Streaming**
 function stopStreaming() {
     if (browser) {
         browser.close();
@@ -208,7 +239,7 @@ function stopStreaming() {
     console.log("⏹️ Stream stopped.");
 }
 
-// Start Express Server (For Health Check)
+// ✅ **Express Server (Health Check)**
 app.get("/", (req, res) => {
     res.send("WebRTC Streaming Bot is Running.");
 });

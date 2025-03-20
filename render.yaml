@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: discord-bot
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_VOICE_CHANNEL_ID
+        sync: false

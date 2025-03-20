@@ -1,23 +1,19 @@
-# استخدام صورة Ubuntu مع Node.js مثبت مسبقًا
+# استخدم Ubuntu كأساس
 FROM ubuntu:20.04
 
-# تثبيت تحديثات النظام و FFmpeg و Node.js
+# تحديث الحزم وتثبيت FFmpeg و Node.js
 RUN apt-get update && apt-get install -y ffmpeg curl && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean
+    apt-get install -y nodejs
 
-# تحديد مجلد العمل داخل الحاوية
+# إنشاء مجلد داخل الحاوية للتطبيق
 WORKDIR /app
 
-# نسخ ملفات package.json و package-lock.json فقط أولًا لتسريع الـ build
+# نسخ ملفات المشروع إلى الحاوية
 COPY package*.json ./
-
-# تثبيت جميع البكجات
 RUN npm install
 
-# الآن نسخ جميع ملفات المشروع إلى الحاوية
 COPY . .
 
-# تشغيل البوت عند بدء الحاوية
+# تشغيل البوت عند تشغيل الحاوية
 CMD ["node", "index.js"]
