@@ -61,26 +61,68 @@ async function startStreaming(guildId, videoUrl) {
     });
     
     page = await browser.newPage();
+
+    let interceptedVideoUrl = null;
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+        const url = request.url();
+        if (url.includes(".m3u8")) {
+            console.log(`🎯 Intercepted HLS stream: ${url}`);
+            interceptedVideoUrl = url;
+        }
+        request.continue();
+    });
+
     await page.goto(videoUrl, { waitUntil: "networkidle2" });
     console.log(`🎥 Opened video page: ${videoUrl}`);
 
-    const videoSrc = await page.evaluate(() => {
-        const videoElement = document.querySelector("video");
-        if (!videoElement) return null;
-    
-        const sourceTag = videoElement.querySelector("source[type='application/x-mpegurl']");
-        return sourceTag ? sourceTag.src : null;
-    });    
+    const videoSrc = await page.evaluate(async () => {
+        return new Promise((resolve) => {
+            const videoElement = document.querySelector("video");
 
-    if (!videoSrc) {
+            if (!videoElement) {
+                resolve(null);
+                return;
+            }
+
+            // تحقق من وجود `source` مباشر
+            const sourceTag = videoElement.querySelector("source[type='application/x-mpegurl']");
+            if (sourceTag) {
+                resolve(sourceTag.src);
+                return;
+            }
+
+            // التحقق مما إذا كان `src` عبارة عن blob:
+            if (videoElement.src.startsWith("blob:")) {
+                const observer = new MutationObserver(() => {
+                    if (videoElement.src && !videoElement.src.startsWith("blob:")) {
+                        observer.disconnect();
+                        resolve(videoElement.src);
+                    }
+                });
+                observer.observe(videoElement, { attributes: true, attributeFilter: ["src"] });
+
+                setTimeout(() => {
+                    observer.disconnect();
+                    resolve(null);
+                }, 5000);
+            } else {
+                resolve(videoElement.src);
+            }
+        });
+    });
+
+    if (!videoSrc && interceptedVideoUrl) {
+        console.log(`✅ Using intercepted video URL: ${interceptedVideoUrl}`);
+    } else if (!videoSrc) {
         console.error("❌ No video found on the page.");
         await browser.close();
         browser = null;
         return;
     }
 
-    console.log(`🎞️ Video source URL: ${videoSrc}`);
-    await playVideoInDiscord(guildId, videoSrc);
+    console.log(`🎞️ Video source URL: ${videoSrc || interceptedVideoUrl}`);
+    await playVideoInDiscord(guildId, videoSrc || interceptedVideoUrl);
 }
 
 // Play Video in Discord using WebRTC
