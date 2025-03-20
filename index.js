@@ -56,10 +56,10 @@ async function startStreaming(guildId, videoUrl) {
     }
 
     browser = await puppeteer.launch({
+        executablePath: '/usr/bin/google-chrome',
         headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
-
     page = await browser.newPage();
     await page.goto(videoUrl, { waitUntil: "networkidle2" });
 
