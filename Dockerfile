@@ -1,8 +1,15 @@
 # استخدام Ubuntu كصورة أساسية
 FROM ubuntu:20.04
 
-# تثبيت التحديثات وPython وFFmpeg و Node.js
+# إعداد المنطقة الزمنية تلقائيًا لتجنب تعليق التثبيت
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
+    tzdata \
+    && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime \
+    && dpkg-reconfigure -f noninteractive tzdata
+
+# تثبيت الحزم المطلوبة
+RUN apt-get install -y \
     python3 \
     python3-pip \
     ffmpeg \
