@@ -1,4 +1,8 @@
 {
+  "scripts": {
+   "postinstall": "npx puppeteer browsers install chrome"
+  },
+  
   "dependencies": {
     "@discordjs/voice": "^0.18.0",
     "axios": "^1.8.4",
