@@ -2,8 +2,7 @@ require("dotenv").config();
 const { Client, GatewayIntentBits } = require("discord.js");
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, VoiceConnectionStatus } = require("@discordjs/voice");
 const puppeteer = require("puppeteer");
-const { spawn } = require("child_process");
-const ytdl = require("@distube/ytdl-core"); // ✅ Updated YouTube module
+const youtubeDlExec = require("youtube-dl-exec"); // ✅ YouTube Fix
 const express = require("express");
 
 const app = express();
@@ -77,10 +76,13 @@ async function playYouTubeAudio(guildId, videoUrl) {
         console.log("🎥 Connected to voice channel, starting YouTube stream...");
 
         try {
-            const stream = await ytdl(videoUrl, {
-                filter: "audioonly",
-                quality: "highestaudio",
-                highWaterMark: 1 << 25,
+            const stream = youtubeDlExec.raw(videoUrl, {
+                output: "-",
+                format: "bestaudio[ext=webm]",
+                limitRate: "100K",
+                noCheckCertificates: true,
+                noWarnings: true,
+                quiet: true
             });
 
             const player = createAudioPlayer();
@@ -167,32 +169,6 @@ async function startStreaming(guildId, videoUrl) {
 
     console.log(`🎞️ Video source URL: ${videoSrc || interceptedVideoUrl}`);
     await playVideoInDiscord(guildId, videoSrc || interceptedVideoUrl);
-}
-
-// ✅ **Play WebRTC Stream in Discord**
-async function playVideoInDiscord(guildId, videoStream) {
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-        console.error("❌ Guild not found.");
-        return;
-    }
-
-    const channel = guild.channels.cache.get(process.env.DISCORD_VOICE_CHANNEL_ID);
-    if (!channel || channel.type !== 2) {
-        console.error("❌ Voice channel not found.");
-        return;
-    }
-
-    const connection = joinVoiceChannel({
-        channelId: channel.id,
-        guildId: guild.id,
-        adapterCreator: guild.voiceAdapterCreator,
-    });
-
-    connection.on(VoiceConnectionStatus.Ready, () => {
-        console.log("🎥 Connected to voice channel, starting WebRTC stream...");
-        startGStreamer(videoStream, connection);
-    });
 }
 
 // ✅ **Stop Streaming**
