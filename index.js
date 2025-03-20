@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, VoiceConnectionStatus } = require("@discordjs/voice");
 const puppeteer = require("puppeteer");
 const { spawn } = require("child_process");
-const ytdl = require("ytdl-core-discord"); // Use `ytdl-core-discord` to fix YouTube issues
+const ytdl = require("@distube/ytdl-core"); // ✅ Updated YouTube module
 const express = require("express");
 
 const app = express();
@@ -22,7 +22,7 @@ client.once("ready", () => {
     console.log(`✅ Bot is online as ${client.user.tag}`);
 });
 
-// Command Handler
+// ✅ **Command Handler**
 client.on("messageCreate", async (message) => {
     if (message.content.startsWith("!watch")) {
         const args = message.content.split(" ");
@@ -77,7 +77,12 @@ async function playYouTubeAudio(guildId, videoUrl) {
         console.log("🎥 Connected to voice channel, starting YouTube stream...");
 
         try {
-            const stream = await ytdl(videoUrl, { filter: "audioonly", highWaterMark: 1 << 25 });
+            const stream = await ytdl(videoUrl, {
+                filter: "audioonly",
+                quality: "highestaudio",
+                highWaterMark: 1 << 25,
+            });
+
             const player = createAudioPlayer();
             const resource = createAudioResource(stream);
 
@@ -188,40 +193,6 @@ async function playVideoInDiscord(guildId, videoStream) {
         console.log("🎥 Connected to voice channel, starting WebRTC stream...");
         startGStreamer(videoStream, connection);
     });
-}
-
-// ✅ **GStreamer for Audio Playback**
-function startGStreamer(videoStream, connection) {
-    console.log("🚀 Starting GStreamer...");
-
-    gstreamerProcess = spawn("gst-launch-1.0", [
-        "playbin", `uri=${videoStream}`,
-        "!", "audioconvert",
-        "!", "audioresample",
-        "!", "opusenc",
-        "!", "rtpopuspay",
-        "!", "queue",
-        "!", "appsink"
-    ]);
-
-    gstreamerProcess.stdout.on("data", (data) => {
-        console.log(`🔊 GStreamer Output: ${data}`);
-    });
-
-    gstreamerProcess.stderr.on("data", (data) => {
-        console.error(`❌ GStreamer Error: ${data}`);
-    });
-
-    gstreamerProcess.on("close", (code) => {
-        console.log(`⏹️ GStreamer exited with code ${code}`);
-        stopStreaming();
-    });
-
-    const player = createAudioPlayer();
-    const resource = createAudioResource(videoStream);
-
-    player.play(resource);
-    connection.subscribe(player);
 }
 
 // ✅ **Stop Streaming**
