@@ -58,16 +58,24 @@ async function startStreaming(guildId, videoUrl) {
     browser = await puppeteer.launch({
         headless: "new",
         args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });     
+    });
     
     page = await browser.newPage();
     await page.goto(videoUrl, { waitUntil: "networkidle2" });
-
     console.log(`🎥 Opened video page: ${videoUrl}`);
 
     const videoSrc = await page.evaluate(() => {
         const videoElement = document.querySelector("video");
-        return videoElement ? videoElement.src : null;
+        if (!videoElement) return null;
+        // إذا كان رابط الفيديو يبدأ بـ blob، فابحث عن وسم <source>
+        let src = videoElement.src;
+        if (src.startsWith("blob:")) {
+            const sourceElement = videoElement.querySelector("source");
+            if (sourceElement && sourceElement.src) {
+                src = sourceElement.src;
+            }
+        }
+        return src;
     });
 
     if (!videoSrc) {
@@ -78,7 +86,6 @@ async function startStreaming(guildId, videoUrl) {
     }
 
     console.log(`🎞️ Video source URL: ${videoSrc}`);
-
     await playVideoInDiscord(guildId, videoSrc);
 }
 
