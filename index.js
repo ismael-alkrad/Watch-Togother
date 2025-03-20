@@ -2,7 +2,8 @@ require("dotenv").config();
 const { Client, GatewayIntentBits } = require("discord.js");
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, VoiceConnectionStatus } = require("@discordjs/voice");
 const puppeteer = require("puppeteer");
-const youtubeDlExec = require("youtube-dl-exec"); // ✅ YouTube Fix
+const { spawn } = require("child_process");
+const youtubeDlExec = require("youtube-dl-exec"); // ✅ Fixed YouTube issue
 const express = require("express");
 
 const app = express();
@@ -76,7 +77,8 @@ async function playYouTubeAudio(guildId, videoUrl) {
         console.log("🎥 Connected to voice channel, starting YouTube stream...");
 
         try {
-            const stream = youtubeDlExec.raw(videoUrl, {
+            // ✅ الطريقة الصحيحة لاستخدام youtube-dl-exec
+            const process = youtubeDlExec(videoUrl, {
                 output: "-",
                 format: "bestaudio[ext=webm]",
                 limitRate: "100K",
@@ -86,7 +88,7 @@ async function playYouTubeAudio(guildId, videoUrl) {
             });
 
             const player = createAudioPlayer();
-            const resource = createAudioResource(stream);
+            const resource = createAudioResource(process.stdout);
 
             player.play(resource);
             connection.subscribe(player);
