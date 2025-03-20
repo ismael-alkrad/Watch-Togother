@@ -98,6 +98,17 @@ async function playYouTubeAudio(guildId, videoUrl) {
     });
 }
 
+
+async function startBrowser() {
+    const browser = await puppeteer.launch({
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
+    return browser;
+}
+
 // ✅ **Start WebRTC Streaming for Other Websites**
 async function startStreaming(guildId, videoUrl) {
     if (browser) {
@@ -105,10 +116,7 @@ async function startStreaming(guildId, videoUrl) {
         return;
     }
 
-    browser = await puppeteer.launch({
-        headless: "new",
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
+    browser = await startBrowser();
 
     page = await browser.newPage();
 

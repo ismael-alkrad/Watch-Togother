@@ -8,14 +8,31 @@ RUN apt-get update && apt-get install -y \
     && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime \
     && dpkg-reconfigure -f noninteractive tzdata
 
-# تثبيت الحزم المطلوبة
+# ✅ تثبيت المكتبات المطلوبة لـ Puppeteer
 RUN apt-get install -y \
-    python3 \
-    python3-pip \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libxrender1 \
+    libxshmfence1 \
+    xdg-utils \
     ffmpeg \
     curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
+    python3 \
+    python3-pip
 
 # تعيين مسار Python الافتراضي
 RUN ln -s /usr/bin/python3 /usr/bin/python
@@ -34,6 +51,10 @@ RUN npm install
 
 # نسخ بقية الملفات
 COPY . .
+
+# تعيين Puppeteer لاستخدام Chromium بدلاً من تنزيل نسخة جديدة
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # تشغيل البوت
 CMD ["node", "index.js"]
