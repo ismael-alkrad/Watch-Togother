@@ -60,6 +60,7 @@ async function startStreaming(guildId, videoUrl) {
         headless: true,
         args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
+    
     page = await browser.newPage();
     await page.goto(videoUrl, { waitUntil: "networkidle2" });
 
